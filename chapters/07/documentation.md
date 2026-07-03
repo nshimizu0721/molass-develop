@@ -298,6 +298,70 @@ Without frontmatter, MyST may derive the page title from the first H2 heading, c
 - `replace_string_in_file` (JSON escaping mismatch)
 - PowerShell text operations (UTF-8 BOM injection risk)
 
+#### Executing Notebooks and Populating Outputs
+
+**Important**: MyST does **not** execute notebooks during the build - it uses the stored outputs in the `.ipynb` files. Before committing changes, you must execute notebooks locally to populate outputs.
+
+**Automated execution script**: All four documentation repositories (tutorial, essence, technical, develop) include `execute_notebooks.ps1`:
+
+```powershell
+# Execute all notebooks (useful for initial setup or major changes)
+.\execute_notebooks.ps1 -All
+
+# Execute only changed notebooks (default, efficient for incremental work)
+.\execute_notebooks.ps1
+
+# Execute a specific notebook
+.\execute_notebooks.ps1 -Path chapters\05\lrf.ipynb
+
+# Execute all notebooks in a chapter
+.\execute_notebooks.ps1 -Chapter 20
+```
+
+**When to use `-All` flag**:
+1. Initial repository setup (populating all outputs for the first time)
+2. After updating molass library version (ensure all notebooks work with new API)
+3. Before major releases (verify all notebooks execute correctly)
+4. When diagnostic tool reports empty outputs
+
+**Default behavior** (`-Changed`): Uses git to detect modified notebooks since last commit, executes only those. This is the **recommended workflow for daily editing**.
+
+**Execution workflow**:
+1. Edit notebook in VS Code
+2. Save changes
+3. Run `.\execute_notebooks.ps1` (detects changes via git, executes modified notebooks)
+4. Verify outputs in the notebook
+5. Commit and push
+
+**CI validation**: The GitHub Actions workflow includes a validation step that checks all notebooks have outputs before building. If validation fails, the deployment is blocked and you'll see an error like:
+
+```
+❌ ERROR: Notebooks without outputs (run ./execute_notebooks.ps1 locally)
+  - chapters/05/lrf.ipynb
+  - chapters/20/rigorous.ipynb
+```
+
+Fix by running `.\execute_notebooks.ps1 -All` locally, then commit and push.
+
+**Diagnostic tool**: `check_notebook_status.py` shows the execution status of all notebooks:
+
+```powershell
+python check_notebook_status.py
+```
+
+Output example:
+```
+✅ 11/11         chapters\01\data_objects.ipynb
+⚠️  9/11        chapters\05\lrf.ipynb
+❌ 0/5          chapters\20\rigorous.ipynb
+```
+
+- ✅ All code cells have outputs
+- ⚠️ Some cells have outputs (partial execution)
+- ❌ No code cells have outputs (not executed)
+
+**Reference**: Automation added in molass-essence commit 3fb9694 (2026-07-03), replicated to all four documentation repositories.
+
 ## How to use Sphinx
 
 If you are just updating existing parts of the document, skip to [Usual Update Routine](#usual_update_routine).
