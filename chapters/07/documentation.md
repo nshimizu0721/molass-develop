@@ -406,9 +406,95 @@ We will give some hints on edition later.
 
 ### Customize `conf.py`
 
-* Add the root directory to the system path to ensure the documentation of the current state
-* Add extensions
-* Set sphinx_book_theme
+The `conf.py` file in `docs/` controls Sphinx behavior. Key customizations for molass-library:
+
+#### 1. Version Configuration
+
+Extract version from the package dynamically:
+
+```python
+from molass import get_version
+release = str(get_version(toml_only=True))
+version = '.'.join(release.split('.')[:2])  # X.Y from X.Y.Z
+```
+
+**Why**: Ensures documentation version matches package version automatically. No manual updates needed when releasing new versions.
+
+**Effect**: Version appears in browser tab title (e.g., "Molass Library Reference — Molass Library 1.0.1 documentation") and HTML metadata.
+
+#### 2. Type Hints Display
+
+```python
+autodoc_typehints = 'description'
+autodoc_typehints_description_target = 'documented'
+```
+
+**Why**: Python type hints (e.g., `path: str | Path`) are cleaner in parameter descriptions than in function signatures.
+
+**Effect**: Type information appears in the "Parameters" section with better formatting, making API documentation more readable.
+
+#### 3. Intersphinx Mapping
+
+Cross-reference external documentation:
+
+```python
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3", None),
+    "numpy": ("https://numpy.org/doc/stable/", None),
+    "matplotlib": ("https://matplotlib.org/stable/", None),
+    "scipy": ("https://docs.scipy.org/doc/scipy/", None),
+}
+```
+
+**Why**: When molass functions use `numpy.ndarray` or `matplotlib.axes.Axes` in type hints or docstrings, these become clickable links to the official documentation of those libraries.
+
+**Effect**: Users can click `ndarray` to jump to NumPy's documentation, improving discoverability.
+
+#### 4. Theme Options
+
+```python
+html_theme_options = {
+    "repository_url": "https://github.com/biosaxs-dev/molass-library",
+    "use_repository_button": True,
+    "show_toc_level": 2,          # Show 2 levels in table of contents
+    "navigation_depth": 4,        # Allow 4 levels in sidebar navigation
+    "pygment_dark_style": "monokai",  # Code highlighting in dark mode
+}
+```
+
+**Why**: 
+- `show_toc_level` and `navigation_depth` improve navigation for large API surfaces
+- `pygment_dark_style` ensures readable code syntax highlighting when users prefer dark mode
+- Repository button links users back to GitHub for issues/contributions
+
+**Effect**: Better navigation UX and improved accessibility.
+
+#### 5. Path Setup
+
+```python
+import sys, os
+root_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+sys.path.insert(0, root_dir)  # Required to import molass
+```
+
+**Why**: Sphinx needs to import the package to extract docstrings. This ensures it imports the current development version, not an installed package.
+
+**Effect**: Documentation always reflects the current state of the source code.
+
+#### 6. Essential Extensions
+
+```python
+extensions = [
+    "sphinx.ext.autodoc",       # Extract docstrings from Python code
+    "sphinx.ext.napoleon",      # Support NumPy/Google docstring styles
+    "sphinx.ext.autosectionlabel",  # Auto-generate section labels for linking
+    'sphinx_copybutton',        # Add copy button to code blocks
+    'myst_parser',              # Parse MyST markdown in docs
+    "sphinx.ext.intersphinx",   # Cross-reference external docs
+]
+```
+
+**Reference**: Configuration improvements applied 2026-07-03 (conf.py in molass-library).
 
 (generate_rst_files)=
 ### Gererate *.rst files
